@@ -21,7 +21,6 @@ const createUser = async (req: Request, res: Response) => {
 
 const getUserById = async (req: Request, res: Response) => {
   try {
-    for (let i = 0; i < 500000000; i++) {}
     const user = await Users.findOne(
       { _id: new ObjectId(req.params.id) },
       { projection: { password: 0 } },
