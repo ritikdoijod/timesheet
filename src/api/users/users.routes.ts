@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { ParamsWithId } from "../../interfaces/params.js";
 import { validate } from "../../middlewares/validate.js";
-import { User, UserUpdateSchema } from "./user.model.js";
+import { User } from "./user.schema.js";
+
 import {
   createUser,
   deleteUser,
@@ -11,15 +12,22 @@ import {
 
 const router = Router();
 
-router
-  .route("/")
-  .post(validate({ body: User }), createUser)
-  .get((req, res) => res.status(200).json({ message: "hello" }));
+router.route("/").post(
+  validate({
+    body: User.partial().required({
+      username: true,
+      password: true,
+      confirmPassword: true,
+      email: true,
+    }),
+  }),
+  createUser,
+);
 
 router
   .route("/:id")
   .get(validate({ params: ParamsWithId }), getUserById)
-  .put(validate({ params: ParamsWithId, body: UserUpdateSchema }), updateUser)
+  .put(validate({ params: ParamsWithId, body: User.partial() }), updateUser)
   .delete(deleteUser);
 
 export default router;

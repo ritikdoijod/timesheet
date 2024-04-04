@@ -1,14 +1,21 @@
-import * as z from "zod";
-import { ObjectId } from "mongodb";
-import { db } from "../../configs/db.js";
+import mongoose from "mongoose";
 
-const Task = z.object({
-  name: z.string().min(3),
-  description: z.string(),
-  status: z.string().min(3),
-  author: z.instanceof(ObjectId),
+const taskSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  description: { type: String },
+  status: { type: String },
+  author: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Users",
+    required: true,
+  },
+  customer: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Customers",
+    required: true,
+  },
 });
 
-export type Task = z.infer<typeof Task>;
+const Tasks = mongoose.models.Tasks || mongoose.model("Tasks", taskSchema);
 
-export const Tasks = db.collection<Task>("tasks");
+export default Tasks;

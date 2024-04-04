@@ -1,37 +1,24 @@
-import * as z from "zod";
-import { ObjectId } from "mongodb";
-import { db } from "../../configs/db.js";
+import mongoose from "mongoose";
+import type { User } from "./user.schema.js";
 
-export const User = z
-  .object({
-    username: z
-      .string()
-      .trim()
-      .min(3, { message: "username must be at least 3 characters long" }),
-    password: z
-      .string()
-      .regex(/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/, {
-        message:
-          "Password must be at least 8 characters long, contain at least one uppercase letter, one lowercase letter, one number and one special character",
-      }),
-    email: z.string().email({ message: "Invalid email address" }),
-    phone: z
-      .string()
-      .regex(/^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/, {
-        message: "Must be a valid phone number",
-      }),
-    fullName: z
-      .string()
-      .trim()
-      .min(3, { message: "Full name must be at least 3 characters long" }),
-    tasks: z.array(z.instanceof(ObjectId)).optional(),
-  })
-  .strict();
+const userSchema = new mongoose.Schema<User>({
+  username: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  email: { type: String, required: true },
+  phone: { type: String },
+  firstName: { type: String },
+  lastName: { type: String },
+  tasks: [{ type: mongoose.Schema.Types.ObjectId, ref: "Tasks" }],
+  roles: { type: String, enum: ["admin", "user"] },
+});
 
-export const UserUpdateSchema = User.extend({
-  username: z.string().min(3),
-}).partial();
+userSchema.methods.toJSON = function () {
+  const obj = this.toObject(); // or const obj = this;
+  delete obj.password;
+  return obj;
+};
 
-export type User = z.infer<typeof User>;
+const Users =
+  mongoose.models.Users || mongoose.model<User>("Users", userSchema);
 
-export const Users = db.collection<User>("users");
+export default Users;

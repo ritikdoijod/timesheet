@@ -1,15 +1,19 @@
-import { Users } from "./user.model.js";
+import Users from "./user.model.js";
 import { ObjectId } from "mongodb";
+import { hash } from "argon2";
 const createUser = async (req, res) => {
     try {
         const userExists = await Users.findOne({ username: req.body.username });
         if (userExists)
             return res.status(422).json({ message: "username should be unique" });
-        const user = await Users.insertOne(req.body);
-        delete req.body.password;
-        return res
-            .status(201)
-            .json({ ...req.body, createdAt: user.insertedId.getTimestamp() });
+        if (req.body.password !== req.body.confirmPassword)
+            return res
+                .status(422)
+                .json({ message: "password and confirm password should match" });
+        delete req.body.confirmPassword;
+        req.body.password = await hash(req.body.password);
+        const user = await Users.create(req.body);
+        return res.status(201).json(user);
     }
     catch (error) {
         console.log(error);
@@ -18,7 +22,6 @@ const createUser = async (req, res) => {
 };
 const getUserById = async (req, res) => {
     try {
-        for (let i = 0; i < 500000000; i++) { }
         const user = await Users.findOne({ _id: new ObjectId(req.params.id) }, { projection: { password: 0 } });
         if (!user) {
             return res.status(404).json({ message: "User not found" });

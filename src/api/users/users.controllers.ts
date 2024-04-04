@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
-import { Users } from "./user.model.js";
+import Users from "./user.model.js";
 import { ObjectId } from "mongodb";
+import { hash } from "argon2";
 
 const createUser = async (req: Request, res: Response) => {
   try {
@@ -8,11 +9,18 @@ const createUser = async (req: Request, res: Response) => {
     if (userExists)
       return res.status(422).json({ message: "username should be unique" });
 
-    const user = await Users.insertOne(req.body);
-    delete req.body.password;
-    return res
-      .status(201)
-      .json({ ...req.body, createdAt: user.insertedId.getTimestamp() });
+    if (req.body.password !== req.body.confirmPassword)
+      return res
+        .status(422)
+        .json({ message: "password and confirm password should match" });
+
+    delete req.body.confirmPassword;
+
+    req.body.password = await hash(req.body.password);
+
+    const user = await Users.create(req.body);
+
+    return res.status(201).json(user);
   } catch (error) {
     console.log(error);
     return res.status(500).json(error);
